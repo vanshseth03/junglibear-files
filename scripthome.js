@@ -10,7 +10,6 @@ const loadMoreBtnEl = document.getElementById("loadMoreBtn");
 const currentYearEl = document.getElementById("currentYear");
 const cartIconEl = document.getElementById("cartIcon");
 const cartCountEl = document.getElementById("cartCount");
-
 // Filter elements
 const filterBtnEl = document.getElementById("filterBtn");
 const filterButtons = document.querySelectorAll(".filter-btn");
