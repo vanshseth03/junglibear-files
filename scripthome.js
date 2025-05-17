@@ -1,11 +1,4 @@
 
-
-// Global function to prevent reference errors
-window.setupPriceFilter = function() {
-  // Empty function to prevent reference errors
-  console.log("Price filter setup called");
-};
-
 // Variables for image navigation
 let currentImageIndex = 0;
 let productImages = [];
@@ -111,8 +104,8 @@ async function fetchProducts() {
         const maxProductPrice = Math.max(...products.map(p => p.price || 0));
         priceFilter = Math.ceil(maxProductPrice / 100) * 100;
         
-        console.log("Fetched products:", products.length);
-        console.log("Max product price:", maxProductPrice);
+        ("Fetched products:", products.length);
+        ("Max product price:", maxProductPrice);
 
         // Extract carousel items
         carouselItems = products
@@ -125,7 +118,7 @@ async function fetchProducts() {
                 productId: item.id
             }));
             
-        console.log("Carousel items:", carouselItems.length);
+        ("Carousel items:", carouselItems.length);
 
         // Make them globally available
         window.products = products;
@@ -143,7 +136,7 @@ async function fetchProducts() {
                         img.src = url;
                     });
                 }));
-                console.log("Carousel images preloaded");
+                ("Carousel images preloaded");
             } catch (error) {
                 console.warn("Error preloading carousel images:", error);
             }
@@ -169,7 +162,7 @@ async function fetchProducts() {
 
 
 
-console.log("Next Order ID:", nextOrderID);
+("Next Order ID:", nextOrderID);
 // Initialize the application
 function init() {
   // Set current year in footer
@@ -259,7 +252,7 @@ function setupCarousel() {
     return;
   }
   
-  console.log("Setting up carousel with", carouselItems.length, "items");
+  ("Setting up carousel with", carouselItems.length, "items");
   
   // Clear existing slides
   carouselTrackEl.innerHTML = '';
@@ -528,7 +521,7 @@ function filterAndRenderProducts() {
   if (minPriceRange && maxPriceRange) {
     minPrice = parseInt(minPriceRange.value);
     maxPrice = parseInt(maxPriceRange.value);
-    console.log(`Applying price filter: ₹${minPrice} - ₹${maxPrice}`);
+    (`Applying price filter: ₹${minPrice} - ₹${maxPrice}`);
   }
   
   // Apply filters
@@ -1105,7 +1098,7 @@ async function processCheckout() {
   lastOrderDate: new Date().toISOString()
 };
 
-  console.log(userData)
+  (userData)
   // Create order data
 const orderData = {
   orderId: nextOrderID, 
@@ -1143,7 +1136,7 @@ const orderData = {
       console.warn('Could not save user data, but continuing with order:', error);
       // Continue with the order even if user save fails
     });
-    console.log(userResponse);
+    (userResponse);
     // Submit order to API
     const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
@@ -1276,7 +1269,7 @@ function shareProduct(product) {
       text: text,
       url: url
     })
-    .then(() => console.log('Shared successfully'))
+    .then(() => ('Shared successfully'))
     .catch(err => {
       console.error('Share error:', err);
       createShareFallbackOptions(url, title, text);
