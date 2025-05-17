@@ -1031,7 +1031,7 @@ async function loadUsers() {
       // Add event listener to view button
       const viewButton = row.querySelector('.view-btn');
       viewButton.addEventListener('click', () => {
-        console.log('User button clicked with ID:', user._id);
+
         viewUserDetails(user._id);
       });
     });
@@ -1071,7 +1071,7 @@ function filterUsers() {
 
 async function viewUserDetails(userId) {
   try {
-    console.log('Viewing user details for ID:', userId);
+
     const response = await fetch(`/api/users/${userId}`);
     
     if (!response.ok) {
@@ -1079,8 +1079,7 @@ async function viewUserDetails(userId) {
     }
     
     const user = await response.json();
-    console.log('User data:', user);
-    
+
     // Check if user modal exists
     const userModal = document.getElementById('userDetailsModal');
     if (!userModal) {
@@ -1131,11 +1130,10 @@ async function viewUserDetails(userId) {
       }
       
       if (validOrderIds.length === 0) {
-        console.log('No valid orders found for user');
+
         ordersListContainer.innerHTML = '<p class="no-orders-message">No order history available</p>';
       } else {
-        console.log(`Found ${validOrderIds.length} valid orders for user:`, validOrderIds);
-        
+    
         // Create a container for all orders
         const ordersList = document.createElement('div');
         let hasValidOrders = false;
@@ -1143,7 +1141,7 @@ async function viewUserDetails(userId) {
         // Process each order ID
         for (const orderId of validOrderIds) {
           try {
-            console.log('Fetching order:', orderId);
+            
             const orderResponse = await fetch(`/api/orders/${orderId}`);
             
             if (!orderResponse.ok) {
@@ -1152,7 +1150,7 @@ async function viewUserDetails(userId) {
             }
             
             const order = await orderResponse.json();
-            console.log('Order data received:', order);
+
             
             if (!order || !order.orderId) {
               console.warn('Received invalid order data:', order);
@@ -1212,7 +1210,7 @@ async function viewUserDetails(userId) {
   btn.addEventListener('click', (event) => {
     event.preventDefault();
     const orderId = btn.dataset.orderId;
-    console.log('Viewing order details:', orderId);
+
     
     // Hide user modal and show order details
     userModal.classList.remove('active'); // Change 'show' to 'active' here
@@ -1223,7 +1221,7 @@ async function viewUserDetails(userId) {
             btn.addEventListener('click', (event) => {
               event.preventDefault();
               const orderId = btn.dataset.orderId;
-              console.log('Viewing order details:', orderId);
+
               
               // Hide user modal and show order details
               userModal.classList.remove('show');
