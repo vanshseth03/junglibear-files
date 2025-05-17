@@ -1,8 +1,6 @@
-
 // Variables for image navigation
 let currentImageIndex = 0;
 let productImages = [];
-
 // DOM elements
 const carouselTrackEl = document.getElementById("carouselTrack");
 const prevButtonEl = document.getElementById("prevButton");
