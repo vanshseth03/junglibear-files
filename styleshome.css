@@ -15,6 +15,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+
+
 }
 
 body {
@@ -1133,7 +1135,7 @@ footer {
   margin-bottom: 1rem;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 /* Add styling for the scrollbar */
@@ -1299,4 +1301,10 @@ footer {
   color: white;
   font-weight: 600;
   letter-spacing: 0.5px;
+}
+@media (max-width: 600px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem;
+  }
 }
