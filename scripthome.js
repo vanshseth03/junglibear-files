@@ -1,6 +1,15 @@
+
+
+// Global function to prevent reference errors
+window.setupPriceFilter = function() {
+  // Empty function to prevent reference errors
+  console.log("Price filter setup called");
+};
+
 // Variables for image navigation
 let currentImageIndex = 0;
 let productImages = [];
+
 // DOM elements
 const carouselTrackEl = document.getElementById("carouselTrack");
 const prevButtonEl = document.getElementById("prevButton");
@@ -10,6 +19,7 @@ const loadMoreBtnEl = document.getElementById("loadMoreBtn");
 const currentYearEl = document.getElementById("currentYear");
 const cartIconEl = document.getElementById("cartIcon");
 const cartCountEl = document.getElementById("cartCount");
+
 // Filter elements
 const filterBtnEl = document.getElementById("filterBtn");
 const filterButtons = document.querySelectorAll(".filter-btn");
@@ -72,7 +82,7 @@ let visibleProductCount = 8;
 let cartItems = [];
 let deliveryFee = 0;
 let selectedCategories = [];
-const API_BASE_URL = 'https://junglibear.onrender.com/api';
+const API_BASE_URL = ' https://junglibear.onrender.com/api';
 let products = [];
 let carouselItems = [];
 let nextOrderID= 1
@@ -101,8 +111,8 @@ async function fetchProducts() {
         const maxProductPrice = Math.max(...products.map(p => p.price || 0));
         priceFilter = Math.ceil(maxProductPrice / 100) * 100;
         
-        ("Fetched products:", products.length);
-        ("Max product price:", maxProductPrice);
+        console.log("Fetched products:", products.length);
+        console.log("Max product price:", maxProductPrice);
 
         // Extract carousel items
         carouselItems = products
@@ -115,7 +125,7 @@ async function fetchProducts() {
                 productId: item.id
             }));
             
-        ("Carousel items:", carouselItems.length);
+        console.log("Carousel items:", carouselItems.length);
 
         // Make them globally available
         window.products = products;
@@ -133,7 +143,7 @@ async function fetchProducts() {
                         img.src = url;
                     });
                 }));
-                ("Carousel images preloaded");
+                console.log("Carousel images preloaded");
             } catch (error) {
                 console.warn("Error preloading carousel images:", error);
             }
@@ -159,7 +169,7 @@ async function fetchProducts() {
 
 
 
-("Next Order ID:", nextOrderID);
+console.log("Next Order ID:", nextOrderID);
 // Initialize the application
 function init() {
   // Set current year in footer
@@ -249,7 +259,7 @@ function setupCarousel() {
     return;
   }
   
-  ("Setting up carousel with", carouselItems.length, "items");
+  console.log("Setting up carousel with", carouselItems.length, "items");
   
   // Clear existing slides
   carouselTrackEl.innerHTML = '';
@@ -518,7 +528,7 @@ function filterAndRenderProducts() {
   if (minPriceRange && maxPriceRange) {
     minPrice = parseInt(minPriceRange.value);
     maxPrice = parseInt(maxPriceRange.value);
-    (`Applying price filter: ₹${minPrice} - ₹${maxPrice}`);
+    console.log(`Applying price filter: ₹${minPrice} - ₹${maxPrice}`);
   }
   
   // Apply filters
@@ -1095,7 +1105,7 @@ async function processCheckout() {
   lastOrderDate: new Date().toISOString()
 };
 
-  (userData)
+  console.log(userData)
   // Create order data
 const orderData = {
   orderId: nextOrderID, 
@@ -1133,7 +1143,7 @@ const orderData = {
       console.warn('Could not save user data, but continuing with order:', error);
       // Continue with the order even if user save fails
     });
-    (userResponse);
+    console.log(userResponse);
     // Submit order to API
     const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
@@ -1266,7 +1276,7 @@ function shareProduct(product) {
       text: text,
       url: url
     })
-    .then(() => ('Shared successfully'))
+    .then(() => console.log('Shared successfully'))
     .catch(err => {
       console.error('Share error:', err);
       createShareFallbackOptions(url, title, text);
@@ -1299,71 +1309,48 @@ function copyToClipboard(text) {
 
 // Show share notification
 function showShareNotification(message) {
-  // Create notification element
-  let notification = document.querySelector('.notification-toast');
+  // Use the existing notification element
+  const notification = document.getElementById('shareNotification');
+  const text = document.getElementById('shareNotificationText');
   
-  if (!notification) {
-    notification = document.createElement('div');
-    notification.className = 'notification-toast';
-    document.body.appendChild(notification);
+  if (!notification || !text) {
+    console.error("Share notification elements not found");
+    return;
   }
   
-  notification.innerHTML = `
-    <div class="notification-content">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="18" cy="5" r="3"></circle>
-        <circle cx="6" cy="12" r="3"></circle>
-        <circle cx="18" cy="19" r="3"></circle>
-        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-      </svg>
-      <div class="notification-message">
-        ${message}
-      </div>
-    </div>
-  `;
+  // Set the text
+  text.textContent = message;
   
-  // Show notification
-  notification.classList.add('show');
+  // Show the notification
+  notification.style.display = "block";
   
-  // Hide notification after 3 seconds
+  // Hide after 3 seconds
   setTimeout(() => {
-    notification.classList.remove('show');
+    notification.style.display = "none";
   }, 3000);
 }
-
 // Show "Added to cart" notification
 function showAddedToCartNotification(productTitle) {
-  // Create notification element
-  let notification = document.querySelector('.notification-toast');
+  // Use the existing notification element
+  const notification = document.getElementById('simpleNotification');
+  const text = document.getElementById('notificationText');
   
-  if (!notification) {
-    notification = document.createElement('div');
-    notification.className = 'notification-toast';
-    document.body.appendChild(notification);
+  if (!notification || !text) {
+    console.error("Notification elements not found");
+    return;
   }
   
-  notification.innerHTML = `
-    <div class="notification-content">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-      </svg>
-      <div class="notification-message">
-        <strong>${productTitle}</strong> added to cart!
-      </div>
-    </div>
-  `;
+  // Set the text
+  text.textContent = productTitle + " added to cart!";
   
-  // Show notification
-  notification.classList.add('show');
+  // Show the notification
+  notification.style.display = "block";
   
-  // Hide notification after 3 seconds
+  // Hide after 3 seconds
   setTimeout(() => {
-    notification.classList.remove('show');
+    notification.style.display = "none";
   }, 3000);
 }
-
 // Helper function: Capitalize first letter
 function capitalizeFirstLetter(string) {
   if (!string) return '';
@@ -1372,6 +1359,33 @@ function capitalizeFirstLetter(string) {
 
 // Set up event listeners
 function setupEventListeners() {
+  const searchInput = document.getElementById('searchInput');
+  const searchButton = document.getElementById('searchButton');
+  
+  if (searchInput && searchButton) {
+    // Search when button is clicked
+    searchButton.addEventListener('click', () => {
+      performSearch(searchInput.value);
+    });
+    
+    // Search when Enter key is pressed
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performSearch(searchInput.value);
+      }
+    });
+    
+    // Search as you type (after 3 characters)
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.trim();
+      if (query.length >= 3) {
+        performSearch(query);
+      } else if (query.length === 0) {
+        // Reset to show all products when search is cleared
+        filterAndRenderProducts();
+      }
+    });
+  }
   // Cart icon click
   if (cartIconEl) {
     cartIconEl.addEventListener('click', () => {
@@ -1507,3 +1521,42 @@ window.addEventListener('resize', () => {
 document.addEventListener('DOMContentLoaded', () => {
   fetchProducts().catch(err => console.error("Fetch error:", err));
 });
+
+// Add this function to your scripthome.js file
+function performSearch(query) {
+  if (!query || query.trim() === '') {
+    // If empty query, show all products
+    filterAndRenderProducts();
+    return;
+  }
+  
+  query = query.toLowerCase().trim();
+  
+  // Filter products based on search query
+  const filteredProducts = products.filter(product => 
+    product.title?.toLowerCase().includes(query) || 
+    product.description?.toLowerCase().includes(query) ||
+    product.category?.toLowerCase().includes(query)
+  );
+  
+  // Display search results
+  if (productGridEl) {
+    if (filteredProducts.length === 0) {
+      productGridEl.innerHTML = `
+        <div class="no-results" style="text-align: center; padding: 2rem; width: 100%;">
+          <p>No products found for "${query}"</p>
+          <button class="button" onclick="filterAndRenderProducts()">Show All Products</button>
+        </div>
+      `;
+    } else {
+      // Clear current products
+      productGridEl.innerHTML = '';
+      
+      // Render filtered products
+      filteredProducts.forEach(product => {
+        const productCard = renderProductCard(product);
+        productGridEl.appendChild(productCard);
+      });
+    }
+  }
+}
