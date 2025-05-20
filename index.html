@@ -7,6 +7,103 @@
   <meta name="description" content="Discover premium home goods with free store pickup and affordable home delivery available.">
   <link rel="stylesheet" href="styleshome.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Creepster&display=swap" rel="stylesheet">
+  <style>
+/* Search bar styles */
+.search-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 400px;
+  margin: 0 1rem;
+}
+
+.search-container input {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px 0 0 4px;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.search-container button {
+  background-color: #3B82F6;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-container button:hover {
+  background-color: #1E3A8A;
+}
+
+/* Make the header responsive */
+@media (max-width: 768px) {
+  .header .container {
+    flex-wrap: wrap;
+  }
+  
+  .search-container {
+    order: 3;
+    margin: 0.5rem 0;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+/* Fixed header layout - stop position exchange */
+.header .container {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  gap: 15px;
+}
+
+.logo {
+  grid-column: 1;
+}
+
+.search-container {
+  grid-column: 2;
+  width: 100%;
+  max-width: 400px;
+  justify-self: center;
+}
+
+.cart-icon {
+  grid-column: 3;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .header .container {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+  }
+  
+  .logo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  .cart-icon {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  
+  .search-container {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    max-width: 100%;
+    margin-top: 10px;
+  }
+}
+</style>
 </head>
 <body>
   <div class="announcement-bar">
@@ -22,6 +119,7 @@
       </div>
     </div>
   </div>
+  
   <div class="top-bar">
     <div class="container">
       <div class="contact-info">
@@ -47,6 +145,17 @@
       <div class="logo">
         <h1>JungliBear</h1>
       </div>
+          <!-- Add this search bar -->
+     <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search products...">
+      <button id="searchButton">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+    </div>
+    
       <div class="cart-icon" id="cartIcon">
         <span class="cart-count" id="cartCount">0</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -67,7 +176,6 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 19l-7-7 7-7" />
           </svg>
-          
         </button>
         <button class="carousel-button next" id="nextButton" aria-label="Next slide">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -272,8 +380,9 @@
         <button class="close-button" id="closeConfirmationButton">&times;</button>
       </div>
       <div class="modal-body text-center">
-
-
+        <div class="success-icon">
+          <img src="https://cdn.pixabay.com/animation/2023/10/13/04/26/04-26-56-532_512.gif" width="120" height="120" alt="Green tick animation">
+        </div>
         <h3>Thank You for Your Order!</h3>
         <p id="confirmation-message">Your order has been successfully placed.</p>
         <div class="order-details" id="confirmationDetails">
@@ -325,6 +434,15 @@
       </div>
     </div>
   </div>
+<!-- Simple notification element -->
+<div id="simpleNotification" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #3b82f6; color: white; padding: 15px 20px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 9999;">
+  <span id="notificationText"></span>
+</div>
+<!-- Share notification element -->
+<div id="shareNotification" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #3B82F6; color: white; padding: 15px 20px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 9999;">
+  <span id="shareNotificationText"></span>
+</div>
+  <script src="productshome.js" ></script>
   <script type= "module" src="scripthome.js"></script>
 </body>
 </html>
