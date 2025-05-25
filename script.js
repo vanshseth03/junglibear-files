@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // API URL constant
-const API_BASE_URL = '  https://junglibear.onrender.com/api';
+const API_BASE_URL = ' https://junglibear.onrender.com/api';
 
 // Global variables for modal actions
 let currentItemToDelete = null;
@@ -423,7 +423,7 @@ async function loadProducts() {
             ${product.inStock ? 'In Stock' : 'Out of Stock'}
           </span>
         </td>
-        <td>${isProductInCarousel(product.id) ? 'Yes' : 'No'}</td>
+        <td>${product.inCarousel === true ? 'Yes' : 'No'}</td>
         <td class="actions-cell">
           <button class="action-btn edit-btn" title="Edit Product" data-id="${product.id}">
             <i class="fas fa-edit"></i>
@@ -489,12 +489,6 @@ function filterProducts() {
   });
 }
 
-function isProductInCarousel(productId) {
-  // This function would check if a product is in the carousel
-  // In a real implementation, you'd check against data from the API
-  // For now, we'll use a placeholder implementation
-  return false;
-}
 
 function initProductForm() {
   const productForm = document.getElementById('productForm');
@@ -614,25 +608,25 @@ async function editProduct(productId) {
     document.getElementById('productCategory').value = product.category;
     document.getElementById('productInStock').checked = product.inStock;
     
-    // Check if product is in carousel
-    const inCarousel = isProductInCarousel(product.id);
-    document.getElementById('productInCarousel').checked = inCarousel;
+    // Set carousel checkbox based on product data
+    document.getElementById('productInCarousel').checked = product.inCarousel || false;
     
-    // Show/hide carousel data fields
-    const carouselDataFields = document.querySelector('.carousel-data');
-    carouselDataFields.style.display = inCarousel ? 'block' : 'none';
-    
-    // Populate carousel data if available
-    if (inCarousel) {
-      // Fetch carousel data
-      const carouselResponse = await fetch(`${API_BASE_URL}/carousel/${productId}`);
+    // Show/hide carousel fields and pre-fill data
+    const carouselFields = document.querySelector('.carousel-data');
+    if (product.inCarousel) {
+      carouselFields.style.display = 'block';
       
-      if (carouselResponse.ok) {
-        const carouselData = await carouselResponse.json();
-        document.getElementById('carouselTitle').value = carouselData.title || '';
-        document.getElementById('carouselSubtitle').value = carouselData.subtitle || '';
-      }
+      // Pre-fill carousel fields with existing data or defaults
+      document.getElementById('carouselTitle').value = product.carouselTitle || product.title;
+      document.getElementById('carouselSubtitle').value = product.carouselSubtitle || (product.description ? product.description.substring(0, 50) + '...' : '');
+    } else {
+      carouselFields.style.display = 'none';
+      document.getElementById('carouselTitle').value = '';
+      document.getElementById('carouselSubtitle').value = '';
     }
+    
+    // Reset existing images to prevent duplication
+    existingImages = [];
     
     // Display existing images
     const existingImagesContainer = document.getElementById('existingImages');
@@ -650,19 +644,22 @@ async function editProduct(productId) {
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-image';
         removeBtn.innerHTML = '&times;';
-        removeBtn.addEventListener('click', () => {
+        removeBtn.onclick = () => {
+          existingImages.splice(existingImages.indexOf(image), 1);
           imageWrapper.remove();
-          existingImages = existingImages.filter(img => img !== image);
-        });
+        };
         
         imageWrapper.appendChild(img);
         imageWrapper.appendChild(removeBtn);
         existingImagesContainer.appendChild(imageWrapper);
         
-        // Add to existing images array
         existingImages.push(image);
       });
     }
+    
+    // Clear new image uploads
+    imageFilesToUpload = [];
+    document.getElementById('imagePreviewContainer').innerHTML = '';
     
     // Show modal
     showModal(document.getElementById('productModal'));
@@ -672,7 +669,6 @@ async function editProduct(productId) {
     showNotification('Failed to load product details', 'error');
   }
 }
-
 async function deleteProduct(productId) {
   try {
     const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
@@ -1031,7 +1027,7 @@ async function loadUsers() {
       // Add event listener to view button
       const viewButton = row.querySelector('.view-btn');
       viewButton.addEventListener('click', () => {
-
+        console.log('User button clicked with ID:', user._id);
         viewUserDetails(user._id);
       });
     });
@@ -1071,7 +1067,7 @@ function filterUsers() {
 
 async function viewUserDetails(userId) {
   try {
-
+    console.log('Viewing user details for ID:', userId);
     const response = await fetch(`/api/users/${userId}`);
     
     if (!response.ok) {
@@ -1079,7 +1075,8 @@ async function viewUserDetails(userId) {
     }
     
     const user = await response.json();
-
+    console.log('User data:', user);
+    
     // Check if user modal exists
     const userModal = document.getElementById('userDetailsModal');
     if (!userModal) {
@@ -1130,10 +1127,11 @@ async function viewUserDetails(userId) {
       }
       
       if (validOrderIds.length === 0) {
-
+        console.log('No valid orders found for user');
         ordersListContainer.innerHTML = '<p class="no-orders-message">No order history available</p>';
       } else {
-    
+        console.log(`Found ${validOrderIds.length} valid orders for user:`, validOrderIds);
+        
         // Create a container for all orders
         const ordersList = document.createElement('div');
         let hasValidOrders = false;
@@ -1141,7 +1139,7 @@ async function viewUserDetails(userId) {
         // Process each order ID
         for (const orderId of validOrderIds) {
           try {
-            
+            console.log('Fetching order:', orderId);
             const orderResponse = await fetch(`/api/orders/${orderId}`);
             
             if (!orderResponse.ok) {
@@ -1150,7 +1148,7 @@ async function viewUserDetails(userId) {
             }
             
             const order = await orderResponse.json();
-
+            console.log('Order data received:', order);
             
             if (!order || !order.orderId) {
               console.warn('Received invalid order data:', order);
@@ -1210,7 +1208,7 @@ async function viewUserDetails(userId) {
   btn.addEventListener('click', (event) => {
     event.preventDefault();
     const orderId = btn.dataset.orderId;
-
+    console.log('Viewing order details:', orderId);
     
     // Hide user modal and show order details
     userModal.classList.remove('active'); // Change 'show' to 'active' here
@@ -1221,7 +1219,7 @@ async function viewUserDetails(userId) {
             btn.addEventListener('click', (event) => {
               event.preventDefault();
               const orderId = btn.dataset.orderId;
-
+              console.log('Viewing order details:', orderId);
               
               // Hide user modal and show order details
               userModal.classList.remove('show');
