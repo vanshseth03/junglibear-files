@@ -1267,51 +1267,47 @@ function updateURLWithoutProductId() {
 async function shareProduct(product) {
   const url = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
   
-  // Create the complete message text with all product details
-  const fullMessage = `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}\n\n🔗 ${url}`;
+  if (product.images && product.images.length > 0) {
+    try {
+      // Fetch the image as blob from cached website data
+      const response = await fetch(product.images[0]);
+      const blob = await response.blob();
+      const file = new File([blob], `${product.title.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`, { type: blob.type });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: `${product.title} - JungliBear`,
+            text: `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}`,
+            url: url,
+            files: [file]
+          });
+          showShareNotification('Product shared successfully!');
+          return;
+        } catch (err) {
+          console.error('Sharing failed:', err);
+        }
+      } else {
+        console.log("Sharing with files not supported on your device.");
+      }
+    } catch (error) {
+      console.log('Failed to fetch image:', error);
+    }
+  }
   
-  // Try text-only sharing FIRST (this usually works better for including descriptions)
+  // Fallback to text-only sharing
   if (navigator.share) {
     try {
       await navigator.share({
         title: `${product.title} - JungliBear`,
-        text: fullMessage,
+        text: `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}`,
         url: url
       });
       showShareNotification('Product shared successfully!');
-      return;
     } catch (error) {
-      console.log('Text sharing failed, trying with image:', error);
+      createShareFallbackOptions(url, product.title, `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}`);
     }
   }
-  
-  // If text sharing fails, then try with image
-  if (product.images && product.images.length > 0) {
-    try {
-      // Fetch the image as blob from cached website data
-      const imageResponse = await fetch(product.images[0]);
-      const imageBlob = await imageResponse.blob();
-      
-      // Create a file from the blob
-      const imageFile = new File([imageBlob], `${product.title.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`, {
-        type: imageBlob.type
-      });
-      
-      // Share with image only (no text since it gets ignored anyway)
-      if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-        await navigator.share({
-          files: [imageFile]
-        });
-        showShareNotification('Product shared successfully!');
-        return;
-      }
-    } catch (error) {
-      console.log('Failed to share with image:', error);
-    }
-  }
-  
-  // Final fallback
-  createShareFallbackOptions(url, product.title, fullMessage);
 }
 // Create share fallback options
 function createShareFallbackOptions(url, title, text) {
