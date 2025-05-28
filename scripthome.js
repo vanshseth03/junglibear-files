@@ -1264,29 +1264,55 @@ function updateURLWithoutProductId() {
 }
 
 // Share product
-function shareProduct(product) {
-  const url = window.location.origin + window.location.pathname + '?product=' + product.id;
-  const title = `Check out ${product.title} on JungliBear`;
-  const text = `${product.title} - ₹${product.price.toFixed(2)}`;
+async function shareProduct(product) {
+  const url = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
   
-  // Use Web Share API if available
+  // Create the complete message text with all product details
+  const fullMessage = `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}\n\n🔗 ${url}`;
+  
+  // Try text-only sharing FIRST (this usually works better for including descriptions)
   if (navigator.share) {
-    navigator.share({
-      title: title,
-      text: text,
-      url: url
-    })
-    .then(() => console.log('Shared successfully'))
-    .catch(err => {
-      console.error('Share error:', err);
-      createShareFallbackOptions(url, title, text);
-    });
-  } else {
-    // Fallback for browsers that don't support Web Share API
-    createShareFallbackOptions(url, title, text);
+    try {
+      await navigator.share({
+        title: `${product.title} - JungliBear`,
+        text: fullMessage,
+        url: url
+      });
+      showShareNotification('Product shared successfully!');
+      return;
+    } catch (error) {
+      console.log('Text sharing failed, trying with image:', error);
+    }
   }
+  
+  // If text sharing fails, then try with image
+  if (product.images && product.images.length > 0) {
+    try {
+      // Fetch the image as blob from cached website data
+      const imageResponse = await fetch(product.images[0]);
+      const imageBlob = await imageResponse.blob();
+      
+      // Create a file from the blob
+      const imageFile = new File([imageBlob], `${product.title.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`, {
+        type: imageBlob.type
+      });
+      
+      // Share with image only (no text since it gets ignored anyway)
+      if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+        await navigator.share({
+          files: [imageFile]
+        });
+        showShareNotification('Product shared successfully!');
+        return;
+      }
+    } catch (error) {
+      console.log('Failed to share with image:', error);
+    }
+  }
+  
+  // Final fallback
+  createShareFallbackOptions(url, product.title, fullMessage);
 }
-
 // Create share fallback options
 function createShareFallbackOptions(url, title, text) {
   // Copy URL to clipboard
