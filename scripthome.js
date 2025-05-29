@@ -576,18 +576,7 @@ function filterAndRenderProducts() {
     }
     
     // Make grid responsive based on screen size
-    const screenWidth = window.innerWidth;
-    if (screenWidth >= 1200) {
-      productGridEl.style.gridTemplateColumns = 'repeat(5, 1fr)'; // 5 per row on large screens
-    } else if (screenWidth >= 992) {
-      productGridEl.style.gridTemplateColumns = 'repeat(4, 1fr)'; // 4 per row on medium-large screens
-    } else if (screenWidth >= 768) {
-      productGridEl.style.gridTemplateColumns = 'repeat(3, 1fr)'; // 3 per row on medium screens
-    } else if (screenWidth >= 576) {
-      productGridEl.style.gridTemplateColumns = 'repeat(2, 1fr)'; // 2 per row on small screens
-    } else {
-      productGridEl.style.gridTemplateColumns = 'repeat(1, 1fr)'; // 1 per row on very small screens
-    }
+    updateGridLayout();
     
     // Show only a certain number of products
     const productsToShow = filtered.slice(0, visibleProductCount);
@@ -1628,13 +1617,28 @@ function setupEventListeners() {
 }
 // Add window resize event to update the grid layout
 window.addEventListener('resize', () => {
-  // Throttle the resize event to prevent too many updates
   clearTimeout(window.resizeTimeout);
   window.resizeTimeout = setTimeout(() => {
-    filterAndRenderProducts();
+    updateGridLayout();
   }, 250);
 });
 
+function updateGridLayout() {
+  if (!productGridEl) return;
+  
+  const screenWidth = window.innerWidth;
+  if (screenWidth >= 1200) {
+    productGridEl.style.gridTemplateColumns = 'repeat(5, 1fr)';
+  } else if (screenWidth >= 992) {
+    productGridEl.style.gridTemplateColumns = 'repeat(4, 1fr)';
+  } else if (screenWidth >= 768) {
+    productGridEl.style.gridTemplateColumns = 'repeat(3, 1fr)';
+  } else if (screenWidth >= 576) {
+    productGridEl.style.gridTemplateColumns = 'repeat(2, 1fr)';
+  } else {
+    productGridEl.style.gridTemplateColumns = 'repeat(1, 1fr)';
+  }
+}
 // Start fetching products when the page loads
 document.addEventListener('DOMContentLoaded', () => {
   fetchProducts().catch(err => console.error("Fetch error:", err));
@@ -1643,11 +1647,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Add this function to your scripthome.js file
 function performSearch(query) {
   if (!query || query.trim() === '') {
-    // If empty query, show all products
-    filterAndRenderProducts();
     return;
   }
-  
   query = query.toLowerCase().trim();
   
   // Filter products based on search query
