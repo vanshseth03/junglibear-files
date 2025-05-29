@@ -1398,15 +1398,37 @@ function setupEventListeners() {
     });
     
     // Search as you type (after 3 characters)
-    searchInput.addEventListener('input', () => {
-      const query = searchInput.value.trim();
-      if (query.length >= 3) {
-        performSearch(query);
-      } else if (query.length === 0) {
-        // Reset to show all products when search is cleared
-        filterAndRenderProducts();
-      }
-    });
+    // Search as you type (after 3 characters)
+let searchTimeout;
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.trim();
+  
+  // Clear previous timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  
+  // Add small delay to prevent too many searches
+  searchTimeout = setTimeout(() => {
+    if (query.length >= 3) {
+      performSearch(query);
+    } else if (query.length === 0) {
+      // Reset to show all products when search is cleared
+      filterAndRenderProducts();
+    }
+  }, 300); // 300ms delay
+});
+
+// Handle blur event (when keyboard closes on mobile)
+searchInput.addEventListener('blur', () => {
+  const query = searchInput.value.trim();
+  if (query.length === 0) {
+    // Small delay to ensure proper reset
+    setTimeout(() => {
+      filterAndRenderProducts();
+    }, 100);
+  }
+});
   }
   // Cart icon click
   if (cartIconEl) {
