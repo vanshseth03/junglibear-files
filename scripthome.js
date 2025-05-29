@@ -9,7 +9,7 @@ window.setupPriceFilter = function() {
 // Variables for image navigation
 let currentImageIndex = 0;
 let productImages = [];
-
+let categoriesInitialized = false;
 // DOM elements
 const carouselTrackEl = document.getElementById("carouselTrack");
 const prevButtonEl = document.getElementById("prevButton");
@@ -1386,77 +1386,109 @@ function capitalizeFirstLetter(string) {
 // Set up event listeners
 function setupEventListeners() {
   const searchInput = document.getElementById('searchInput');
-  // Search button click
-const searchButton = document.getElementById('searchButton');
-if (searchButton) {
-  searchButton.addEventListener('click', () => {
-    const searchInput = document.getElementById('searchInput');
-    const query = searchInput.value.trim();
-    
-    // Close keyboard by removing focus
-    searchInput.blur();
-    
-    if (query.length >= 3) {
-      performSearch(query);
-    } else if (query.length === 0) {
-      filterAndRenderProducts();
-    }
-  });
-}
+  const searchButton = document.getElementById('searchButton');
   
-  if (searchInput && searchButton) {
-    // Search when button is clicked
+  // Search functionality
+  if (searchButton && searchInput) {
+    // Search button click
     searchButton.addEventListener('click', () => {
-      performSearch(searchInput.value);
-    });
-    
-    // Search when Enter key is pressed
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        performSearch(searchInput.value);
+      const query = searchInput.value.trim();
+      searchInput.blur(); // Close keyboard
+      
+      if (query.length >= 3) {
+        performSearch(query);
+      } else if (query.length === 0) {
+        filterAndRenderProducts();
       }
     });
     
-    // Search as you type (after 3 characters)
-    // Search as you type (after 3 characters)
-let searchTimeout;
-searchInput.addEventListener('input', () => {
-  const query = searchInput.value.trim();
-  
-  // Clear previous timeout
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
+    // Enter key press
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        searchInput.blur(); // Close keyboard
+        
+        if (query.length >= 3) {
+          performSearch(query);
+        }
+      }
+    });
+    
+    // Search as you type with debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.trim();
+      
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      
+      searchTimeout = setTimeout(() => {
+        if (query.length >= 3) {
+          performSearch(query);
+        } else if (query.length === 0) {
+          filterAndRenderProducts();
+        }
+      }, 300);
+    });
   }
-  
-  // Add small delay to prevent too many searches
-  searchTimeout = setTimeout(() => {
-    if (query.length >= 3) {
-      performSearch(query);
-    } else if (query.length === 0) {
-      // Reset to show all products when search is cleared
+
+  // Load more button
+  if (loadMoreBtnEl) {
+    loadMoreBtnEl.addEventListener('click', () => {
+      visibleProductCount += 8;
       filterAndRenderProducts();
-    }
-  }, 300); // 300ms delay
-});
-
-
-// Handle Enter key in search input
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const query = searchInput.value.trim();
-    
-    // Close keyboard
-    searchInput.blur();
-    
-    // Don't reset to all products, keep search results
-    if (query.length >= 3) {
-      performSearch(query);
-    }
-    // Remove the else clause that was resetting to all products
+    });
   }
-});
+
+  // Filter modal events
+  if (filterBtnEl) {
+    filterBtnEl.addEventListener('click', () => {
+      if (filterModalEl) {
+        filterModalEl.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      }
+    });
   }
+
+  if (closeFilterButtonEl) {
+    closeFilterButtonEl.addEventListener('click', () => {
+      if (filterModalEl) {
+        filterModalEl.classList.remove('show');
+        document.body.style.overflow = '';
+      }
+    });
+  }
+
+  if (resetFilterBtnEl) {
+    resetFilterBtnEl.addEventListener('click', () => {
+      selectedCategories = [];
+      const checkboxes = document.querySelectorAll('#filterOptions input[type="checkbox"]');
+      checkboxes.forEach(checkbox => checkbox.checked = false);
+      
+      const minPriceRange = document.getElementById('minPriceRange');
+      const maxPriceRange = document.getElementById('maxPriceRange');
+      if (minPriceRange) minPriceRange.value = 0;
+      if (maxPriceRange) maxPriceRange.value = priceFilter;
+      
+      const minPriceValue = document.getElementById('minPriceValue');
+      const maxPriceValue = document.getElementById('maxPriceValue');
+      if (minPriceValue) minPriceValue.textContent = '0';
+      if (maxPriceValue) maxPriceValue.textContent = priceFilter;
+    });
+  }
+
+  if (applyFilterBtnEl) {
+    applyFilterBtnEl.addEventListener('click', () => {
+      filterAndRenderProducts();
+      if (filterModalEl) {
+        filterModalEl.classList.remove('show');
+        document.body.style.overflow = '';
+      }
+    });
+  }
+
   // Cart icon click
   if (cartIconEl) {
     cartIconEl.addEventListener('click', () => {
@@ -1510,7 +1542,6 @@ searchInput.addEventListener('keydown', (e) => {
         addToCart(selectedProduct, quantity);
         showAddedToCartNotification(selectedProduct.title);
         
-        // Close modal after adding to cart
         if (productModalEl) {
           setTimeout(() => {
             productModalEl.classList.remove('show');
@@ -1549,7 +1580,7 @@ searchInput.addEventListener('keydown', (e) => {
     });
   }
   
-  // Society select change
+  // Society change
   if (societyEl) {
     societyEl.addEventListener('change', handleSocietyChange);
   }
@@ -1559,26 +1590,34 @@ searchInput.addEventListener('keydown', (e) => {
     checkoutButtonEl.addEventListener('click', processCheckout);
   }
   
-  // Confirmation modal close
+  // Close confirmation modal
   if (closeConfirmationButtonEl) {
     closeConfirmationButtonEl.addEventListener('click', closeConfirmationModal);
   }
   
-  // Continue shopping button
+  // Continue shopping
   if (continueShoppingEl) {
     continueShoppingEl.addEventListener('click', closeConfirmationModal);
-    
   }
   
-  // Load more button
-  if (loadMoreBtnEl) {
-    loadMoreBtnEl.addEventListener('click', () => {
-      visibleProductCount += 8;
-      filterAndRenderProducts();
-    });
-  }
+  // Click outside modal to close
+  window.addEventListener('click', (e) => {
+    if (e.target === cartModalEl) {
+      cartModalEl.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    if (e.target === productModalEl) {
+      closeProductModal();
+    }
+    if (e.target === filterModalEl) {
+      filterModalEl.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    if (e.target === confirmationModalEl) {
+      closeConfirmationModal();
+    }
+  });
 }
-
 // Add window resize event to update the grid layout
 window.addEventListener('resize', () => {
   // Throttle the resize event to prevent too many updates
