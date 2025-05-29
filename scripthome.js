@@ -189,7 +189,7 @@ function init() {
   
   // Load cart from local storage if available
   loadCartFromStorage();
-  
+  updateProductCardsFromCart();
   // Set up event listeners
   setupEventListeners();
   
@@ -689,11 +689,11 @@ function toggleCartControls(productCard, isInCart, quantity = 1) {
   const qtyControls = productCard.querySelector('.quantity-controls');
   const qtyCount = productCard.querySelector('.qty-count');
   
-  if (isInCart) {
+  if (isInCart && addButton && qtyControls && qtyCount) {
     addButton.style.display = 'none';
     qtyControls.style.display = 'flex';
     qtyCount.textContent = quantity;
-  } else {
+  } else if (!isInCart && addButton && qtyControls) {
     addButton.style.display = 'block';
     qtyControls.style.display = 'none';
   }
@@ -1018,13 +1018,17 @@ function loadCartFromStorage() {
     try {
       cartItems = JSON.parse(savedCart);
       updateCartQuantity();
+      return cartItems; // Add this return statement
     } catch (error) {
       console.error('Error parsing saved cart:', error);
       cartItems = [];
+      return []; // Return empty array on error
     }
+  } else {
+    cartItems = []; // Initialize if no saved cart
+    return []; // Return empty array if no saved cart
   }
 }
-
 // Handle delivery option change
 function handleDeliveryOptionChange() {
   const selectedOption = Array.from(deliveryOptionEls || []).find(opt => opt.checked);
@@ -1307,14 +1311,20 @@ function updateURLWithoutProductId() {
 
 // Share product
 async function shareProduct(product) {
+  console.log('Share function called');
+  console.log('Navigator.share available:', !!navigator.share);
+  console.log('Navigator.canShare available:', !!navigator.canShare);
+  
   const url = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
   
   if (product.images && product.images.length > 0) {
     try {
-      // Fetch the image as blob from cached website data
       const response = await fetch(product.images[0]);
       const blob = await response.blob();
       const file = new File([blob], `${product.title.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`, { type: blob.type });
+
+      console.log('File created:', file);
+      console.log('Can share with files:', navigator.canShare && navigator.canShare({ files: [file] }));
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
@@ -1327,19 +1337,18 @@ async function shareProduct(product) {
           showShareNotification('Product shared successfully!');
           return;
         } catch (err) {
-          console.error('Sharing failed:', err);
+          console.error('File sharing failed:', err);
         }
-      } else {
-        console.log("Sharing with files not supported on your device.");
       }
     } catch (error) {
       console.log('Failed to fetch image:', error);
     }
   }
   
-  // Fallback to text-only sharing
+  // Text-only sharing
   if (navigator.share) {
     try {
+      console.log('Trying text-only share');
       await navigator.share({
         title: `${product.title} - JungliBear`,
         text: `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}`,
@@ -1347,15 +1356,13 @@ async function shareProduct(product) {
       });
       showShareNotification('Product shared successfully!');
     } catch (error) {
-      createShareFallbackOptions(url, product.title, `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}`);
+      console.error('Text sharing failed:', error);
+      showShareNotification('Sharing cancelled or failed');
     }
+  } else {
+    console.log('Web Share API not supported');
+    showShareNotification('Sharing not available on this device');
   }
-}
-// Create share fallback options
-function createShareFallbackOptions(url, title, text) {
-  // Copy URL to clipboard
-  copyToClipboard(url);
-  showShareNotification('Product link copied to clipboard!');
 }
 
 // Copy to clipboard
@@ -1791,4 +1798,22 @@ function performSearch(query) {
       loadMoreBtnEl.style.display = 'none';
     }
   }
+}
+function updateProductCardsFromCart() {
+  const cartItems = loadCartFromStorage();
+  
+  // Add safety check - if cartItems is undefined or not an array, use empty array
+  if (!cartItems || !Array.isArray(cartItems)) {
+    return;
+  }
+  
+  cartItems.forEach(cartItem => {
+    const productCard = document.querySelector(`[data-product-id="${cartItem.id}"]`);
+    if (productCard) {
+      const cardContainer = productCard.closest('.product-card');
+      if (cardContainer) {
+        toggleCartControls(cardContainer, true, cartItem.quantity);
+      }
+    }
+  });
 }
