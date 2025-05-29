@@ -214,6 +214,7 @@ function checkForProductInURL() {
 }
 
 // Handle popstate event for back/forward browser navigation
+// Handle popstate event for back/forward browser navigation
 window.addEventListener('popstate', (event) => {
   // Check if there's a product ID in the URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -231,6 +232,9 @@ window.addEventListener('popstate', (event) => {
     // If no product ID in URL, close any open product modal
     closeProductModal();
   }
+  
+  // Don't reset search when browser back button is pressed
+  // Keep current search state intact
 });
 
 // Find product by ID
@@ -1382,7 +1386,23 @@ function capitalizeFirstLetter(string) {
 // Set up event listeners
 function setupEventListeners() {
   const searchInput = document.getElementById('searchInput');
-  const searchButton = document.getElementById('searchButton');
+  // Search button click
+const searchButton = document.getElementById('searchButton');
+if (searchButton) {
+  searchButton.addEventListener('click', () => {
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput.value.trim();
+    
+    // Close keyboard by removing focus
+    searchInput.blur();
+    
+    if (query.length >= 3) {
+      performSearch(query);
+    } else if (query.length === 0) {
+      filterAndRenderProducts();
+    }
+  });
+}
   
   if (searchInput && searchButton) {
     // Search when button is clicked
@@ -1419,14 +1439,21 @@ searchInput.addEventListener('input', () => {
   }, 300); // 300ms delay
 });
 
-// Handle blur event (when keyboard closes on mobile)
-searchInput.addEventListener('blur', () => {
-  const query = searchInput.value.trim();
-  if (query.length === 0) {
-    // Small delay to ensure proper reset
-    setTimeout(() => {
-      filterAndRenderProducts();
-    }, 100);
+
+// Handle Enter key in search input
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const query = searchInput.value.trim();
+    
+    // Close keyboard
+    searchInput.blur();
+    
+    // Don't reset to all products, keep search results
+    if (query.length >= 3) {
+      performSearch(query);
+    }
+    // Remove the else clause that was resetting to all products
   }
 });
   }
