@@ -623,7 +623,14 @@ function renderProductCard(product) {
       <div class="product-price">₹${product.price.toFixed(2)}</div>
       <div class="product-card-actions">
         <button class="button view-product-button" data-product-id="${product.id}">View Product</button>
-        <button class="button button-outline add-to-cart-button" data-product-id="${product.id}">Add to Cart</button>
+        <div class="cart-controls">
+          <button class="button button-outline add-to-cart-button" data-product-id="${product.id}">Add to Cart</button>
+          <div class="quantity-controls" style="display: none;">
+            <button class="qty-btn qty-decrease">-</button>
+            <span class="qty-count">1</span>
+            <button class="qty-btn qty-increase">+</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -634,9 +641,31 @@ function renderProductCard(product) {
   });
   
   card.querySelector('.add-to-cart-button').addEventListener('click', () => {
-    addToCart(product, 1);
-    showAddedToCartNotification(product.title);
-  });
+  addToCart(product, 1);
+  showAddedToCartNotification(product.title);
+  toggleCartControls(card, true, 1);
+});
+
+// Quantity decrease button
+card.querySelector('.qty-decrease').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const currentQty = parseInt(card.querySelector('.qty-count').textContent);
+  if (currentQty > 1) {
+    updateCartQuantity(product.id, currentQty - 1);
+    card.querySelector('.qty-count').textContent = currentQty - 1;
+  } else {
+    removeFromCart(product.id);
+    toggleCartControls(card, false);
+  }
+});
+
+// Quantity increase button
+card.querySelector('.qty-increase').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const currentQty = parseInt(card.querySelector('.qty-count').textContent);
+  updateCartQuantity(product.id, currentQty + 1);
+  card.querySelector('.qty-count').textContent = currentQty + 1;
+});
   
   card.querySelector('.share-button').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -655,6 +684,26 @@ function renderProductCard(product) {
 }
 
 // Open product modal
+function toggleCartControls(productCard, isInCart, quantity = 1) {
+  const addButton = productCard.querySelector('.add-to-cart-button');
+  const qtyControls = productCard.querySelector('.quantity-controls');
+  const qtyCount = productCard.querySelector('.qty-count');
+  
+  if (isInCart) {
+    addButton.style.display = 'none';
+    qtyControls.style.display = 'flex';
+    qtyCount.textContent = quantity;
+  } else {
+    addButton.style.display = 'block';
+    qtyControls.style.display = 'none';
+  }
+}
+
+function getCartItemQuantity(productId) {
+  const cartItem = cartItems.find(item => item.id === productId);
+  return cartItem ? cartItem.quantity : 0;
+}
+
 function openProductModal(product) {
   selectedProduct = product;
   
@@ -856,7 +905,7 @@ function renderCartItems() {
         <div class="cart-item-price">₹${item.price.toFixed(2)}</div>
         <div class="cart-item-quantity">
           <button class="quantity-button decrease" data-id="${item.id}">-</button>
-          <span>${item.quantity}</span>
+          <span class="qty-count">${item.quantity}</span>
           <button class="quantity-button increase" data-id="${item.id}">+</button>
         </div>
       </div>
@@ -1374,6 +1423,61 @@ function capitalizeFirstLetter(string) {
 
 // Set up event listeners
 function setupEventListeners() {
+  function initPriceRange() {
+  const minInput = document.getElementById('minPriceInput');
+  const maxInput = document.getElementById('maxPriceInput');
+  const minSlider = document.getElementById('minPriceSlider');
+  const maxSlider = document.getElementById('maxPriceSlider');
+  const priceMin = document.querySelector('.price-min');
+  const priceMax = document.querySelector('.price-max');
+  const sliderRange = document.querySelector('.slider-range');
+
+  function updateSliderRange() {
+    const min = parseInt(minSlider.value);
+    const max = parseInt(maxSlider.value);
+    const percent1 = (min / minSlider.max) * 100;
+    const percent2 = (max / maxSlider.max) * 100;
+    
+    sliderRange.style.left = percent1 + '%';
+    sliderRange.style.width = (percent2 - percent1) + '%';
+  }
+
+  function updatePriceDisplay() {
+    priceMin.textContent = '₹' + minSlider.value;
+    priceMax.textContent = '₹' + maxSlider.value;
+  }
+
+  // Sync input fields with sliders
+  minInput.addEventListener('input', () => {
+    minSlider.value = minInput.value;
+    updateSliderRange();
+    updatePriceDisplay();
+  });
+
+  maxInput.addEventListener('input', () => {
+    maxSlider.value = maxInput.value;
+    updateSliderRange();
+    updatePriceDisplay();
+  });
+
+  // Sync sliders with input fields
+  minSlider.addEventListener('input', () => {
+    minInput.value = minSlider.value;
+    updateSliderRange();
+    updatePriceDisplay();
+  });
+
+  maxSlider.addEventListener('input', () => {
+    maxInput.value = maxSlider.value;
+    updateSliderRange();
+    updatePriceDisplay();
+  });
+
+  // Initialize
+  updateSliderRange();
+  updatePriceDisplay();
+}
+initPriceRange();
   const searchInput = document.getElementById('searchInput');
   const searchButton = document.getElementById('searchButton');
   
@@ -1649,15 +1753,16 @@ function performSearch(query) {
   if (!query || query.trim() === '') {
     return;
   }
+
   query = query.toLowerCase().trim();
-  
+
   // Filter products based on search query
   const filteredProducts = products.filter(product => 
     product.title?.toLowerCase().includes(query) || 
     product.description?.toLowerCase().includes(query) ||
     product.category?.toLowerCase().includes(query)
   );
-  
+
   // Display search results
   if (productGridEl) {
     if (filteredProducts.length === 0) {
@@ -1670,12 +1775,20 @@ function performSearch(query) {
     } else {
       // Clear current products
       productGridEl.innerHTML = '';
-      
-      // Render filtered products
+
+      // Update grid layout
+      updateGridLayout();
+
+      // Render ALL filtered products (no limit)
       filteredProducts.forEach(product => {
         const productCard = renderProductCard(product);
         productGridEl.appendChild(productCard);
       });
+    }
+
+    // Hide load more button during search
+    if (loadMoreBtnEl) {
+      loadMoreBtnEl.style.display = 'none';
     }
   }
 }
