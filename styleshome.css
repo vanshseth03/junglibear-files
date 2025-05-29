@@ -1308,3 +1308,7 @@ footer {
     gap: 0.75rem;
   }
 }
+#searchInput {
+  transition: none;
+}
+
