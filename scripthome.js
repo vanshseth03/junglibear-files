@@ -1418,22 +1418,30 @@ function setupEventListeners() {
     // Search as you type with debounce
     let searchTimeout;
     searchInput.addEventListener('input', () => {
-      const query = searchInput.value.trim();
-      
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-      
-      searchTimeout = setTimeout(() => {
-        if (query.length >= 3) {
-          performSearch(query);
-        } else if (query.length === 0) {
-          filterAndRenderProducts();
-        }
-      }, 300);
-    });
+  const query = searchInput.value.trim();
+  
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
   }
-
+  
+  searchTimeout = setTimeout(() => {
+    if (query.length >= 3) {
+      performSearch(query);
+    }
+    // Remove the else if clause that resets to all products
+    // Don't automatically render all products when search is empty
+  }, 300);
+});
+// Only reset to all products when user explicitly clears search
+  searchInput.addEventListener('change', () => {
+    const query = searchInput.value.trim();
+    if (query.length === 0) {
+      // Only reset if user manually cleared the field
+      filterAndRenderProducts();
+    }
+  });
+  }
+    
   // Load more button
   if (loadMoreBtnEl) {
     loadMoreBtnEl.addEventListener('click', () => {
