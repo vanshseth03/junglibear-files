@@ -178,6 +178,11 @@ function init() {
   
   // Load cart from local storage if available
   loadCartFromStorage();
+   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  if (cartCountEl) {
+    cartCountEl.textContent = totalItems;
+    cartCountEl.style.display = totalItems > 0 ? 'flex' : 'none';
+  }
   updateProductCardsFromCart();
   // Set up event listeners
   setupEventListeners();
@@ -596,10 +601,21 @@ function filterAndRenderProducts() {
 function renderProductCard(product) {
   const card = document.createElement('div');
   card.className = 'product-card';
-  
+  card.setAttribute('data-product-id', product.id);
+
   // Prepare product image
   const imageUrl = product.images && product.images.length > 0 ? product.images[0] : 'placeholder.jpg';
-  
+
+  // CHECK CART STATE WHEN CREATING CARD
+  const cartItem = cartItems.find(item => item.id === product.id);
+  const isInCart = cartItem && cartItem.quantity > 0;
+  const quantity = cartItem ? cartItem.quantity : 1;
+
+  // Set initial button state based on cart
+  const addButtonStyle = isInCart ? 'style="display: none;"' : '';
+  const qtyControlsStyle = isInCart ? 'style="display: flex;"' : 'style="display: none;"';
+  const qtyCount = isInCart ? quantity : 1;
+
   card.innerHTML = `
     <div class="product-image">
       <img src="${imageUrl}" alt="${product.title}">
@@ -619,54 +635,54 @@ function renderProductCard(product) {
       <div class="product-card-actions">
         <button class="button view-product-button" data-product-id="${product.id}">View Product</button>
         <div class="cart-controls">
-          <button class="button button-outline add-to-cart-button" data-product-id="${product.id}">Add to Cart</button>
-          <div class="quantity-controls" style="display: none;">
+          <button class="button button-outline add-to-cart-button" data-product-id="${product.id}" ${addButtonStyle}>Add to Cart</button>
+          <div class="quantity-controls" ${qtyControlsStyle}>
             <button class="qty-btn qty-decrease">-</button>
-            <span class="qty-count">1</span>
+            <span class="qty-count">${qtyCount}</span>
             <button class="qty-btn qty-increase">+</button>
           </div>
         </div>
       </div>
     </div>
   `;
-  
+
   // Add event listeners
   card.querySelector('.view-product-button').addEventListener('click', () => {
     openProductModal(product);
   });
-  
+
   card.querySelector('.add-to-cart-button').addEventListener('click', () => {
-  addToCart(product, 1);
-  showAddedToCartNotification(product.title);
-  toggleCartControls(card, true, 1);
-});
+    addToCart(product, 1);
+    showAddedToCartNotification(product.title);
+    toggleCartControls(card, true, 1);
+  });
 
-// Quantity decrease button
-card.querySelector('.qty-decrease').addEventListener('click', (e) => {
-  e.stopPropagation();
-  const currentQty = parseInt(card.querySelector('.qty-count').textContent);
-  if (currentQty > 1) {
-    updateCartQuantity(product.id, currentQty - 1);
-    card.querySelector('.qty-count').textContent = currentQty - 1;
-  } else {
-    removeFromCart(product.id);
-    toggleCartControls(card, false);
-  }
-});
+  // Quantity decrease button
+  card.querySelector('.qty-decrease').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentQty = parseInt(card.querySelector('.qty-count').textContent);
+    if (currentQty > 1) {
+      updateCartQuantity(product.id, currentQty - 1);
+      card.querySelector('.qty-count').textContent = currentQty - 1;
+    } else {
+      removeFromCart(product.id);
+      toggleCartControls(card, false);
+    }
+  });
 
-// Quantity increase button
-card.querySelector('.qty-increase').addEventListener('click', (e) => {
-  e.stopPropagation();
-  const currentQty = parseInt(card.querySelector('.qty-count').textContent);
-  updateCartQuantity(product.id, currentQty + 1);
-  card.querySelector('.qty-count').textContent = currentQty + 1;
-});
-  
+  // Quantity increase button
+  card.querySelector('.qty-increase').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentQty = parseInt(card.querySelector('.qty-count').textContent);
+    updateCartQuantity(product.id, currentQty + 1);
+    card.querySelector('.qty-count').textContent = currentQty + 1;
+  });
+
   card.querySelector('.share-button').addEventListener('click', (e) => {
     e.stopPropagation();
     shareProduct(product);
   });
-  
+
   // Make the entire card clickable to open product modal
   card.addEventListener('click', (e) => {
     // Only open modal if not clicking a button
@@ -674,7 +690,7 @@ card.querySelector('.qty-increase').addEventListener('click', (e) => {
       openProductModal(product);
     }
   });
-  
+
   return card;
 }
 
@@ -838,6 +854,15 @@ function addToCart(product, quantity) {
 
 // Update cart quantity
 function updateCartQuantity(productId, quantity) {
+  // Find and update the cart item
+  const cartItem = cartItems.find(item => item.id === productId);
+  if (cartItem) {
+    cartItem.quantity = quantity;
+  }
+  
+  // Save to storage
+  saveCartToStorage();
+  
   // Update cart count in UI
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   if (cartCountEl) {
@@ -916,18 +941,25 @@ function renderCartItems() {
   
   // Add event listeners
   const decreaseButtons = cartItemsEl.querySelectorAll('.quantity-button.decrease');
-  decreaseButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const id = parseInt(button.dataset.id);
-      const item = cartItems.find(item => item.id === id);
-      if (item && item.quantity > 1) {
-        item.quantity--;
-        saveCartToStorage();
-        renderCartItems();
-        updateCartTotals();
-      }
-    });
+decreaseButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    const id = parseInt(button.dataset.id);
+    const item = cartItems.find(item => item.id === id);
+    if (item && item.quantity > 1) {
+      item.quantity--;
+      saveCartToStorage();
+      renderCartItems();
+      updateCartTotals();
+      updateProductCardStates();
+    } else if (item && item.quantity === 1) {
+      // Remove item when quantity would go to 0
+      removeFromCart(id);
+      renderCartItems();
+      updateCartTotals();
+      
+    }
   });
+});
   
   const increaseButtons = cartItemsEl.querySelectorAll('.quantity-button.increase');
   increaseButtons.forEach(button => {
@@ -939,6 +971,7 @@ function renderCartItems() {
         saveCartToStorage();
         renderCartItems();
         updateCartTotals();
+        updateProductCardStates();
       }
     });
   });
@@ -968,20 +1001,25 @@ function updateCartTotals(isOthers = false) {
   const deliveryOption = Array.from(deliveryOptionEls || []).find(opt => opt.checked);
   
   if (deliveryOption && deliveryOption.value === 'home-delivery') {
-    // Apply delivery fee based on selected society/distance
-    if (societyEl && societyEl.value) {
-      const distanceValue = parseInt(societyEl.value);
-      if (!isNaN(distanceValue)) {
-        // Free delivery for orders above ₹1000
-        deliveryFee = subtotal >= 1000 ? 0 : distanceValue * 10;
-      }
+  if (societyEl && societyEl.value) {
+    switch(societyEl.value) {
+      case 'rajnagar-extn':
+        deliveryFee = 0; // FREE
+        break;
+      case 'ghaziabad':
+      case 'noida':
+      case 'greater-noida':
+      case 'delhi':
+        deliveryFee = 50;
+        break;
+      case 'others':
+        deliveryFee = 100;
+        break;
+      default:
+        deliveryFee = 50;
     }
-    
-    // Show home delivery details
-    if (homeDeliveryDetailsEl) {
-      homeDeliveryDetailsEl.classList.remove('hidden');
-    }
-  } else {
+  }
+} else {
     // Hide home delivery details
     if (homeDeliveryDetailsEl) {
       homeDeliveryDetailsEl.classList.add('hidden');
@@ -1012,7 +1050,6 @@ function loadCartFromStorage() {
   if (savedCart) {
     try {
       cartItems = JSON.parse(savedCart);
-      updateCartQuantity();
       return cartItems; // Add this return statement
     } catch (error) {
       console.error('Error parsing saved cart:', error);
@@ -1107,70 +1144,83 @@ function validateCheckoutForm() {
 
 // Process checkout
 async function processCheckout() {
-
   if (!validateCheckoutForm()) {
     return;
   }
   
-  
-  nextOrderID = Date.now();
-  // Create order object
-  const name = nameEl ? nameEl.value.trim() : '';
-  const phone = phoneEl ? phoneEl.value.trim() : '';
-  const address = addressEl ? addressEl.value.trim() : '';
-  const deliveryOption = Array.from(deliveryOptionEls || []).find(opt => opt.checked).value;
-  const society = societyEl ? societyEl.value : '';
-
-  // Calculate subtotal and total
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  let deliveryFee = 0;
-  
-  if (deliveryOption === 'home-delivery') {
-    const distanceValue = parseInt(society);
-    if (!isNaN(distanceValue)) {
-      deliveryFee = subtotal >= 1000 ? 0 : distanceValue * 10;
-    }
-    
-  }
-  
-  
-  const total = subtotal + deliveryFee;
-  // Create user data
-  const userData = {
-  name,
-  phoneNumber : phone,
-  address,
-  OrderID: nextOrderID,
-  society: deliveryOption === 'home-delivery' ? society : '',
-  lastOrderDate: new Date().toISOString()
-};
-
-  // Create order data
-const orderData = {
-  orderId: nextOrderID, 
-  customerDetails: {
-    name: name || "",
-    phoneNumber: phone || "",
-    address: address || "",
-    deliveryOption: deliveryOption || "pickup",
-    society: deliveryOption === 'home-delivery' ? (society || "") : ""
-  },
-  items: cartItems.map(item => ({
-    id: item.id,
-    title: item.title,
-    price: Number(item.price),
-    quantity: Number(item.quantity)
-  })),
-  subtotal: Number(subtotal),
-  deliveryFee: Number(deliveryFee),
-  total: Number(total),
-  orderDate: new Date().toISOString(),
-  status: 'pending' // Default status
-};
-
-
+  // Show full-screen loading overlay
+  document.body.insertAdjacentHTML('beforeend', 
+    '<div class="loading-overlay"><i class="fas fa-spinner fa-spin loading-spinner-large"></i></div>'
+  );
   
   try {
+    nextOrderID = Date.now();
+    
+    // Create order object
+    const name = nameEl ? nameEl.value.trim() : '';
+    const phone = phoneEl ? phoneEl.value.trim() : '';
+    const address = addressEl ? addressEl.value.trim() : '';
+    const deliveryOption = Array.from(deliveryOptionEls || []).find(opt => opt.checked)?.value || '';
+    const society = societyEl ? societyEl.value : '';
+
+    // Calculate subtotal and total
+    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    let deliveryFee = 0;
+    
+    if (deliveryOption === 'home-delivery' && society) {
+      switch(society) {
+        case 'rajnagar-extn':
+          deliveryFee = 0; // FREE
+          break;
+        case 'ghaziabad':
+        case 'noida':
+        case 'greater-noida':
+        case 'delhi':
+          deliveryFee = 50;
+          break;
+        case 'others':
+          deliveryFee = 100;
+          break;
+        default:
+          deliveryFee = 50;
+      }
+    }
+    
+    const total = subtotal + deliveryFee;
+    
+    // Create user data
+    const userData = {
+      name,
+      phoneNumber: phone,
+      address,
+      OrderID: nextOrderID,
+      society: deliveryOption === 'home-delivery' ? society : '',
+      lastOrderDate: new Date().toISOString()
+    };
+
+    // Create order data
+    const orderData = {
+      orderId: nextOrderID, 
+      customerDetails: {
+        name: name || "",
+        phoneNumber: phone || "",
+        address: address || "",
+        deliveryOption: deliveryOption || "pickup",
+        society: deliveryOption === 'home-delivery' ? (society || "") : ""
+      },
+      items: cartItems.map(item => ({
+        id: item.id,
+        title: item.title,
+        price: Number(item.price),
+        quantity: Number(item.quantity)
+      })),
+      subtotal: Number(subtotal),
+      deliveryFee: Number(deliveryFee),
+      total: Number(total),
+      orderDate: new Date().toISOString(),
+      status: 'pending'
+    };
+
     // Save user data to API
     const userResponse = await fetch(`${API_BASE_URL}/users`, {
       method: 'POST',
@@ -1180,8 +1230,8 @@ const orderData = {
       body: JSON.stringify(userData)
     }).catch(error => {
       console.warn('Could not save user data, but continuing with order:', error);
-      // Continue with the order even if user save fails
     });
+
     // Submit order to API
     const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
@@ -1197,19 +1247,27 @@ const orderData = {
     
     const result = await orderResponse.json();
     
-    // Clear cart
+    // Clear cart and update product cards
     clearCart();
+    updateProductCardStates();
+    
+    // Remove loading overlay
+    document.querySelector('.loading-overlay')?.remove();
     
     // Show confirmation
     openConfirmationModal(orderData, result.orderNumber);
+    
   } catch (error) {
     console.error('Error processing checkout:', error);
+    
+    // Remove loading overlay
+    document.querySelector('.loading-overlay')?.remove();
+    
     alert('There was an error processing your order. Please try again.');
   }
 }
-
 // Open confirmation modal
-function openConfirmationModal(orderData  ) {
+function openConfirmationModal(orderData,orderId  ) {
   // Close cart modal
   if (cartModalEl) {
     cartModalEl.classList.remove('show');
@@ -1219,7 +1277,7 @@ function openConfirmationModal(orderData  ) {
   if (confirmationDetailsEl) {
     confirmationDetailsEl.innerHTML = `
       <h4>Order Details</h4>
-      <p><strong>Order Number:</strong> ${nextOrderID || 'N/A'}</p>
+      <p><strong>Order Number:</strong> ${orderId || 'N/A'}</p>
       <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
       <p><strong>Name:</strong> ${orderData.customerDetails.name}</p>
       <p><strong>Phone:</strong> ${orderData.customerDetails.phoneNumber}</p>
@@ -1273,20 +1331,16 @@ function closeConfirmationModal() {
 
 // Get society name
 function getSocietyName(value) {
-  if (!value) return 'Not specified';
-  
-  const societies = {
-    '2': 'Green Valley Apartments (2 km)',
-    '4': 'Sunshine Enclave (4 km)',
-    '7': 'Royal Heights (7 km)',
-    '10': 'Golden Park Colony (10 km)',
-    '13': 'Silver Oaks Society (13 km)',
-    'others': 'Other'
-  };
-  
-  return societies[value] || value;
+  switch(value) {
+    case 'rajnagar-extn': return 'Rajnagar Extension';
+    case 'ghaziabad': return 'Ghaziabad';
+    case 'noida': return 'Noida';
+    case 'greater-noida': return 'Greater Noida';
+    case 'delhi': return 'Delhi';
+    case 'others': return 'Others';
+    default: return value;
+  }
 }
-
 // Update URL with product ID
 function updateURLWithProductId(productId) {
   const url = new URL(window.location);
@@ -1597,10 +1651,12 @@ initPriceRange();
   // Close cart modal
   if (closeCartButtonEl) {
     closeCartButtonEl.addEventListener('click', () => {
+      
       if (cartModalEl) {
         cartModalEl.classList.remove('show');
         document.body.style.overflow = '';
       }
+      
     });
   }
   
@@ -1802,4 +1858,35 @@ function updateProductCardsFromCart() {
       }
     }
   });
+}
+function updateProductCardStates() {
+  console.log('Updating product cards, cart has', cartItems.length, 'items');
+  
+  document.querySelectorAll('.product-card').forEach(card => {
+    const productId = card.getAttribute('data-product-id');
+    if (!productId) return;
+    
+    const cartItem = cartItems.find(item => item.id == productId); // Use == for type flexibility
+    const addBtn = card.querySelector('.add-to-cart-button');
+    const qtyControls = card.querySelector('.quantity-controls');
+    const qtyCount = card.querySelector('.qty-count');
+    
+    if (cartItem && cartItem.quantity > 0) {
+      // Item is in cart - show quantity controls
+      if (addBtn) addBtn.style.display = 'none';
+      if (qtyControls) qtyControls.style.display = 'flex';
+      if (qtyCount) qtyCount.textContent = cartItem.quantity;
+    } else {
+      // Item not in cart - show add to cart button
+      if (addBtn) addBtn.style.display = 'block';
+      if (qtyControls) qtyControls.style.display = 'none';
+    }
+  });
+  
+  // Update cart count
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  if (cartCountEl) {
+    cartCountEl.textContent = totalItems;
+    cartCountEl.style.display = totalItems > 0 ? 'flex' : 'none';
+  }
 }
