@@ -575,15 +575,17 @@ function filterAndRenderProducts() {
     // Make grid responsive based on screen size
     updateGridLayout();
 
+    // Reverse the order to show newest/latest first
+    const reversedFiltered = filtered.reverse();
+
     // Show only a certain number of products
-    const productsToShow = filtered.slice(0, visibleProductCount);
+    const productsToShow = reversedFiltered.slice(0, visibleProductCount);
 
     // Render products
     productsToShow.forEach(product => {
       const productCard = renderProductCard(product);
       productGridEl.appendChild(productCard);
     });
-
     // Show or hide load more button (only for normal filtering, not search)
     if (loadMoreBtnEl) {
       const searchInput = document.getElementById('searchInput');
@@ -981,6 +983,7 @@ decreaseButtons.forEach(button => {
     button.addEventListener('click', () => {
       const id = parseInt(button.dataset.id);
       removeFromCart(id);
+      updateProductCardStates();
     });
   });
   
