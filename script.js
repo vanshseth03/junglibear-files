@@ -983,6 +983,7 @@ decreaseButtons.forEach(button => {
     button.addEventListener('click', () => {
       const id = parseInt(button.dataset.id);
       removeFromCart(id);
+      updateProductCardStates();
     });
   });
   
