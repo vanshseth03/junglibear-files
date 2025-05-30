@@ -858,9 +858,6 @@ async function viewOrderDetails(orderId) {
     // Fetch order details
     const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch order details');
-    }
     
     const order = await response.json();
     
@@ -890,7 +887,7 @@ async function viewOrderDetails(orderId) {
       orderItem.className = 'order-item';
       
       orderItem.innerHTML = `
-        <img src="${item.image}" alt="${item.title}" class="order-item-image">
+        <img src="${item.image || item.images?.[0] || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNSAyMEMyNi4xMDQ2IDIwIDI3IDIwLjg5NTQgMjcgMjJDMjcgMjMuMTA0NiAyNi4xMDQ2IDI0IDI1IDI0QzIzLjg5NTQgMjQgMjMgMjMuMTA0NiAyMyAyMkMyMyAyMC44OTU0IDIzLjg5NTQgMjAgMjUgMjBaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xNiAzMkwyNC41IDIzLjVMMzAgMjlMMzQuNSAyNC41TDQwIDMwVjM2SDE2VjMyWiIgZmlsbD0iIzlCOUJBMCIvPgo8L3N2Zz4K'}" alt="${item.title}" class="order-item-image">
         <div class="order-item-details">
           <div class="order-item-title">${item.title}</div>
           <div class="order-item-price">₹${item.price}</div>
@@ -911,7 +908,7 @@ async function viewOrderDetails(orderId) {
     
   } catch (error) {
     console.error('Error fetching order details:', error);
-    showNotification('Failed to load order details', 'error');
+
   }
 }
 
@@ -1011,10 +1008,11 @@ async function loadUsers() {
       }
       
       row.innerHTML = `
-        <td>${user._id}</td>
+        <td>${lastOrderDate}</td>
         <td>${user.name || 'N/A'}</td>
         <td>${user.phoneNumber || 'N/A'}</td>
-        <td>${lastOrderDate}</td>
+        <td>${user.address || 'N/A'}</td>
+  <td class="actions-cell">
         <td class="actions-cell">
           <button class="action-btn view-btn" title="View User">
             <i class="fas fa-eye"></i>
@@ -1068,7 +1066,7 @@ function filterUsers() {
 async function viewUserDetails(userId) {
   try {
     console.log('Viewing user details for ID:', userId);
-    const response = await fetch(`/api/users/${userId}`);
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch user: ${response.status}`);
@@ -1140,8 +1138,7 @@ async function viewUserDetails(userId) {
         for (const orderId of validOrderIds) {
           try {
             console.log('Fetching order:', orderId);
-            const orderResponse = await fetch(`/api/orders/${orderId}`);
-            
+            const orderResponse = await fetch(`${API_BASE_URL}/orders/${orderId}`);
             if (!orderResponse.ok) {
               console.warn(`Order ${orderId} not found: ${orderResponse.status}`);
               continue; // Skip this order if not found
