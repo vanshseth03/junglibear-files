@@ -2,8 +2,7 @@
 
 // Global function to prevent reference errors
 window.setupPriceFilter = function() {
-  // Empty function to prevent reference errors
-  console.log("Price filter setup called");
+
 };
 
 // Variables for image navigation
@@ -110,10 +109,6 @@ async function fetchProducts() {
         // Find max product price and round up to nearest 100
         const maxProductPrice = Math.max(...products.map(p => p.price || 0));
         priceFilter = Math.ceil(maxProductPrice / 100) * 100;
-        
-        console.log("Fetched products:", products.length);
-        console.log("Max product price:", maxProductPrice);
-
         // Extract carousel items
         carouselItems = products
             .filter(item => item.inCarousel === true)
@@ -124,8 +119,6 @@ async function fetchProducts() {
                 subtitle: item.carouselSubtitle || "Quality Product",
                 productId: item.id
             }));
-            
-        console.log("Carousel items:", carouselItems.length);
 
         // Make them globally available
         window.products = products;
@@ -143,7 +136,6 @@ async function fetchProducts() {
                         img.src = url;
                     });
                 }));
-                console.log("Carousel images preloaded");
             } catch (error) {
                 console.warn("Error preloading carousel images:", error);
             }
@@ -167,9 +159,6 @@ async function fetchProducts() {
     }
 }
 
-
-
-console.log("Next Order ID:", nextOrderID);
 // Initialize the application
 function init() {
   // Set current year in footer
@@ -263,7 +252,6 @@ function setupCarousel() {
     return;
   }
   
-  console.log("Setting up carousel with", carouselItems.length, "items");
   
   // Clear existing slides
   carouselTrackEl.innerHTML = '';
@@ -520,51 +508,55 @@ function setupFilterModal(categories) {
 
 // Product rendering functions
 function filterAndRenderProducts() {
-  // Get values from price range sliders
-  const minPriceRange = document.getElementById('minPriceRange');
-  const maxPriceRange = document.getElementById('maxPriceRange');
+  // Get values from price range inputs and sliders
+  const minPriceInput = document.getElementById('minPriceInput');
+  const maxPriceInput = document.getElementById('maxPriceInput');
+  const minPriceSlider = document.getElementById('minPriceSlider');
+  const maxPriceSlider = document.getElementById('maxPriceSlider');
   
   // Set default min/max price values
   let minPrice = 0;
-  let maxPrice = priceFilter;
+  let maxPrice = priceFilter || 10000;
   
-  // Get values from sliders if they exist
-  if (minPriceRange && maxPriceRange) {
-    minPrice = parseInt(minPriceRange.value);
-    maxPrice = parseInt(maxPriceRange.value);
-    console.log(`Applying price filter: ₹${minPrice} - ₹${maxPrice}`);
+  // Get values from inputs or sliders
+  if (minPriceInput && maxPriceInput) {
+    minPrice = parseInt(minPriceInput.value) || 0;
+    maxPrice = parseInt(maxPriceInput.value) || 10000;
+  } else if (minPriceSlider && maxPriceSlider) {
+    minPrice = parseInt(minPriceSlider.value) || 0;
+    maxPrice = parseInt(maxPriceSlider.value) || 10000;
   }
-  
+
   // Apply filters
   const filtered = products.filter(product => {
     // Hide out-of-stock products
     if (product.inStock === false) {
       return false;
     }
-    
+
     // Handle dual price filter
     const productPrice = product.price || 0;
     const matchesPrice = productPrice >= minPrice && productPrice <= maxPrice;
-    
+
     // Handle category filter
     let matchesCategory = true;
     if (selectedCategory !== 'all') {
       matchesCategory = product.category === selectedCategory;
     }
-    
+
     // Handle selected categories from modal
     let matchesSelectedCategories = true;
     if (selectedCategories.length > 0) {
       matchesSelectedCategories = selectedCategories.includes(product.category);
     }
-    
+
     return matchesPrice && matchesCategory && matchesSelectedCategories;
   });
-  
+
   // Clear product grid
   if (productGridEl) {
     productGridEl.innerHTML = '';
-    
+
     // Render products
     if (filtered.length === 0) {
       productGridEl.innerHTML = `
@@ -574,22 +566,25 @@ function filterAndRenderProducts() {
       `;
       return;
     }
-    
+
     // Make grid responsive based on screen size
     updateGridLayout();
-    
+
     // Show only a certain number of products
     const productsToShow = filtered.slice(0, visibleProductCount);
-    
+
     // Render products
     productsToShow.forEach(product => {
       const productCard = renderProductCard(product);
       productGridEl.appendChild(productCard);
     });
-    
-    // Show or hide load more button
+
+    // Show or hide load more button (only for normal filtering, not search)
     if (loadMoreBtnEl) {
-      if (filtered.length > visibleProductCount) {
+      const searchInput = document.getElementById('searchInput');
+      const isSearching = searchInput && searchInput.value.trim().length >= 3;
+      
+      if (!isSearching && filtered.length > visibleProductCount) {
         loadMoreBtnEl.style.display = 'block';
       } else {
         loadMoreBtnEl.style.display = 'none';
@@ -1140,7 +1135,6 @@ async function processCheckout() {
   
   
   const total = subtotal + deliveryFee;
-  console
   // Create user data
   const userData = {
   name,
@@ -1151,7 +1145,6 @@ async function processCheckout() {
   lastOrderDate: new Date().toISOString()
 };
 
-  console.log(userData)
   // Create order data
 const orderData = {
   orderId: nextOrderID, 
@@ -1189,7 +1182,6 @@ const orderData = {
       console.warn('Could not save user data, but continuing with order:', error);
       // Continue with the order even if user save fails
     });
-    console.log(userResponse);
     // Submit order to API
     const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
@@ -1311,9 +1303,7 @@ function updateURLWithoutProductId() {
 
 // Share product
 async function shareProduct(product) {
-  console.log('Share function called');
-  console.log('Navigator.share available:', !!navigator.share);
-  console.log('Navigator.canShare available:', !!navigator.canShare);
+
   
   const url = `${window.location.origin}${window.location.pathname}?product=${product.id}`;
   
@@ -1322,9 +1312,6 @@ async function shareProduct(product) {
       const response = await fetch(product.images[0]);
       const blob = await response.blob();
       const file = new File([blob], `${product.title.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`, { type: blob.type });
-
-      console.log('File created:', file);
-      console.log('Can share with files:', navigator.canShare && navigator.canShare({ files: [file] }));
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
@@ -1348,7 +1335,6 @@ async function shareProduct(product) {
   // Text-only sharing
   if (navigator.share) {
     try {
-      console.log('Trying text-only share');
       await navigator.share({
         title: `${product.title} - JungliBear`,
         text: `🛍️ ${product.title}\n\n${product.description}\n\n💰 Price: ₹${product.price}`,
@@ -1360,7 +1346,7 @@ async function shareProduct(product) {
       showShareNotification('Sharing cancelled or failed');
     }
   } else {
-    console.log('Web Share API not supported');
+
     showShareNotification('Sharing not available on this device');
   }
 }
