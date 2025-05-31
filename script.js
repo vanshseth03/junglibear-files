@@ -974,7 +974,7 @@ async function loadUsers() {
     
     // Fetch users
     const response = await fetch(`${API_BASE_URL}/users`);
-    
+
     if (!response.ok) {
       throw new Error('Failed to load users');
     }
@@ -1027,6 +1027,7 @@ async function loadUsers() {
       viewButton.addEventListener('click', () => {
         console.log('User button clicked with ID:', user._id);
         viewUserDetails(user._id);
+        
       });
     });
     
@@ -1065,23 +1066,26 @@ function filterUsers() {
 
 async function viewUserDetails(userId) {
   try {
+    // Add blur and disable interaction
+    document.body.style.filter = 'blur(2px)';
+    document.body.style.webkitFilter = 'blur(2px)';
+    document.body.style.pointerEvents = 'none';
+
     console.log('Viewing user details for ID:', userId);
     const response = await fetch(`${API_BASE_URL}/users/${userId}`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch user: ${response.status}`);
     }
-    
+
     const user = await response.json();
     console.log('User data:', user);
-    
-    // Check if user modal exists
+
     const userModal = document.getElementById('userDetailsModal');
     if (!userModal) {
       throw new Error('User details modal not found in the DOM');
     }
-    
-    // Safely set text content for each element
+
     const setElementText = (id, text) => {
       const element = document.getElementById(id);
       if (element) {
@@ -1090,14 +1094,12 @@ async function viewUserDetails(userId) {
         console.warn(`Element with ID "${id}" not found`);
       }
     };
-    
-    // Populate user details if elements exist
+
     setElementText('userDetailName', user.name || 'N/A');
     setElementText('userDetailPhone', user.phoneNumber || 'N/A');
     setElementText('userDetailAddress', user.address || 'N/A');
     setElementText('userDetailSociety', user.society || 'N/A');
-    
-    // Format last order date if available
+
     let lastOrderDateText = 'N/A';
     if (user.lastOrderDate) {
       try {
@@ -1107,56 +1109,49 @@ async function viewUserDetails(userId) {
       }
     }
     setElementText('userDetailLastOrder', lastOrderDateText);
-    
-    // Check if we have a container for orders
+
     const ordersListContainer = document.getElementById('userOrdersList');
     if (!ordersListContainer) {
       console.warn('Orders list container not found. User orders will not be displayed.');
     } else {
-      // Clear previous orders and show loading
       ordersListContainer.innerHTML = '<div class="loading">Loading orders...</div>';
-      
-      // Filter and validate order IDs
+
       let validOrderIds = [];
       if (user.orders && Array.isArray(user.orders)) {
-        validOrderIds = user.orders.filter(orderId => 
+        validOrderIds = user.orders.filter(orderId =>
           orderId !== null && orderId !== undefined && orderId !== 0 && orderId !== ''
         );
       }
-      
+
       if (validOrderIds.length === 0) {
         console.log('No valid orders found for user');
         ordersListContainer.innerHTML = '<p class="no-orders-message">No order history available</p>';
       } else {
         console.log(`Found ${validOrderIds.length} valid orders for user:`, validOrderIds);
-        
-        // Create a container for all orders
+
         const ordersList = document.createElement('div');
         let hasValidOrders = false;
-        
-        // Process each order ID
+
         for (const orderId of validOrderIds) {
           try {
             console.log('Fetching order:', orderId);
             const orderResponse = await fetch(`${API_BASE_URL}/orders/${orderId}`);
             if (!orderResponse.ok) {
               console.warn(`Order ${orderId} not found: ${orderResponse.status}`);
-              continue; // Skip this order if not found
+              continue;
             }
-            
+
             const order = await orderResponse.json();
             console.log('Order data received:', order);
-            
+
             if (!order || !order.orderId) {
               console.warn('Received invalid order data:', order);
               continue;
             }
-            
-            // Create order item UI
+
             const orderItem = document.createElement('div');
             orderItem.className = 'order-item';
-            
-            // Format order date
+
             let orderDate = 'N/A';
             if (order.orderDate) {
               try {
@@ -1165,13 +1160,11 @@ async function viewUserDetails(userId) {
                 console.warn('Invalid date format for order:', order.orderDate);
               }
             }
-            
-            // Format order status
-            const orderStatus = order.status 
-              ? order.status.charAt(0).toUpperCase() + order.status.slice(1) 
+
+            const orderStatus = order.status
+              ? order.status.charAt(0).toUpperCase() + order.status.slice(1)
               : 'Unknown';
-            
-            // Create order item HTML
+
             orderItem.innerHTML = `
               <div class="order-header">
                 <span class="order-id">Order #${order.orderId}</span>
@@ -1185,60 +1178,47 @@ async function viewUserDetails(userId) {
                 <button class="view-order-btn" data-order-id="${order.orderId}">View Details</button>
               </div>
             `;
-            
+
             ordersList.appendChild(orderItem);
             hasValidOrders = true;
           } catch (err) {
             console.error(`Error processing order ${orderId}:`, err);
-            // Continue to the next order
           }
         }
-        
-        // Update the orders container
+
         ordersListContainer.innerHTML = '';
-        
         if (hasValidOrders) {
           ordersListContainer.appendChild(ordersList);
-          
-          // Add click handlers for view buttons
+
           document.querySelectorAll('.view-order-btn').forEach(btn => {
-  btn.addEventListener('click', (event) => {
-    event.preventDefault();
-    const orderId = btn.dataset.orderId;
-    console.log('Viewing order details:', orderId);
-    
-    // Hide user modal and show order details
-    userModal.classList.remove('active'); // Change 'show' to 'active' here
-    viewOrderDetails(orderId);
-  });
-});
-          document.querySelectorAll('.view-order-btn').forEach(btn => {
-            btn.addEventListener('click', (event) => {
+            btn.addEventListener('click', event => {
               event.preventDefault();
               const orderId = btn.dataset.orderId;
               console.log('Viewing order details:', orderId);
-              
-              // Hide user modal and show order details
-              userModal.classList.remove('show');
+
+              userModal.classList.remove('active');
               viewOrderDetails(orderId);
             });
           });
         } else {
-          // No valid orders found despite having order IDs
           ordersListContainer.innerHTML = '<p class="no-orders-message">No order history available</p>';
         }
       }
     }
-    
-    // Show the user details modal
+
     userModal.classList.add('active');
-    
-    
+
   } catch (error) {
     console.error('Error in viewUserDetails:', error);
     showNotification('Failed to load user details: ' + error.message, 'error');
+  } finally {
+    // Always remove blur and pointer lock after everything is done
+    document.body.style.filter = '';
+    document.body.style.webkitFilter = '';
+    document.body.style.pointerEvents = '';
   }
 }
+
 // ============================================
 // Categories Functions
 // ============================================
