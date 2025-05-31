@@ -1258,7 +1258,7 @@ async function processCheckout() {
     document.querySelector('.loading-overlay')?.remove();
     
     // Show confirmation
-    openConfirmationModal(orderData, result.orderNumber);
+    openConfirmationModal(orderData, nextOrderID);
     
   } catch (error) {
     console.error('Error processing checkout:', error);
