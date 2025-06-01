@@ -1201,28 +1201,29 @@ async function processCheckout() {
       lastOrderDate: new Date().toISOString()
     };
 
-    // Create order data
-    const orderData = {
-      orderId: nextOrderID, 
-      customerDetails: {
-        name: name || "",
-        phoneNumber: phone || "",
-        address: address || "",
-        deliveryOption: deliveryOption || "pickup",
-        society: deliveryOption === 'home-delivery' ? (society || "") : ""
-      },
-      items: cartItems.map(item => ({
-        id: item.id,
-        title: item.title,
-        price: Number(item.price),
-        quantity: Number(item.quantity)
-      })),
-      subtotal: Number(subtotal),
-      deliveryFee: Number(deliveryFee),
-      total: Number(total),
-      orderDate: new Date().toISOString(),
-      status: 'pending'
-    };
+    // Create order data with images
+  const orderData = { 
+    orderId: nextOrderID,  // ADD THIS LINE
+    customerDetails: {
+      name: name || "",
+      phoneNumber: phone || "",
+      address: address || "",
+      deliveryOption: deliveryOption || "pickup",
+      society: deliveryOption === 'home-delivery' ? (society || "") : ""
+    },
+    items: cartItems.map(item => ({
+      id: item.id,
+      title: item.title,
+      price: Number(item.price),
+      quantity: Number(item.quantity),
+      image: item.image || (item.images && item.images.length > 0 ? item.images[0] : 'placeholder.jpg')
+    })),
+    subtotal: Number(subtotal),
+    deliveryFee: Number(deliveryFee),
+    total: Number(total),
+    orderDate: new Date().toISOString(),
+    status: 'pending'
+  };
 
     // Save user data to API
     const userResponse = await fetch(`${API_BASE_URL}/users`, {
@@ -1258,7 +1259,8 @@ async function processCheckout() {
     document.querySelector('.loading-overlay')?.remove();
     
     // Show confirmation
-    openConfirmationModal(orderData, nextOrderID);
+    console.log(orderId)
+    openConfirmationModal(orderData, orderData.orderId);
     
   } catch (error) {
     console.error('Error processing checkout:', error);
@@ -1270,7 +1272,7 @@ async function processCheckout() {
   }
 }
 // Open confirmation modal
-function openConfirmationModal(orderData,orderId  ) {
+function openConfirmationModal(orderData,orderId ) {
   // Close cart modal
   if (cartModalEl) {
     cartModalEl.classList.remove('show');
